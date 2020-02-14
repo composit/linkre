@@ -22,19 +22,23 @@ func main() {
 }
 
 func buildVisit(root string) filepath.WalkFunc {
-	return func(oldPath string, f os.FileInfo, err error) error {
+	return func(oldRelPath string, f os.FileInfo, err error) error {
+		oldPath, err := filepath.Abs(oldRelPath)
+		if err != nil {
+			return err
+		}
+
 		if filepath.Ext(oldPath) == Suffix {
 			newPath := strings.TrimPrefix(
-				strings.TrimSuffix(oldPath, Suffix), root,
+				strings.TrimSuffix(oldRelPath, Suffix), root,
 			)
 			newPath = filepath.Join("/", newPath)
-
 
 			fmt.Printf("Symlinking %s...\n", filepath.Base(newPath))
 			fmt.Printf("old: %s\n", oldPath)
 			fmt.Printf("new: %s\n", newPath)
 
-			ok, err := checkToPath(oldPath, newPath)
+			ok, err := checkNewPath(oldPath, newPath)
 			if err != nil {
 				return err
 			}
@@ -52,7 +56,7 @@ func buildVisit(root string) filepath.WalkFunc {
 	}
 }
 
-func checkToPath(oldPath, newPath string) (bool, error) {
+func checkNewPath(oldPath, newPath string) (bool, error) {
 	s, err := os.Lstat(newPath)
 	if err != nil {
 		if os.IsNotExist(err) {
